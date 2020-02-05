@@ -12,14 +12,37 @@ class AddCategory extends Component {
       title: '',
       description: '',
       selectedCategoryImage: null,
-      isSaving: false
+      isSaving: false,
+      formError: ''
     }
+  }
+
+  showSuccess = (msg) => {
+    const options = {
+      place: 'tr',
+      message: msg,
+      type: 'success',
+      autoDismiss: 3,
+      icon: ''
+    };
+    this.refs.notify.notificationAlert(options);
+  }
+
+  showError = (err) => {
+    const options = {
+      place: 'tr',
+      message: err,
+      type: 'danger',
+      autoDismiss: 3,
+      icon: ''
+    };
+    this.refs.notify.notificationAlert(options);
   }
 
   onImageChange = (event) => {
     if (event.target.files && event.target.files[0]) {
       this.setState({
-        selectedCategoryImage: URL.createObjectURL(event.target.files[0])
+        selectedCategoryImage: event.target.files[0]
       });
     }
   }
@@ -36,23 +59,38 @@ class AddCategory extends Component {
     const param = {
       title: this.state.title,
       description: this.state.description,
-      image: 'sample.png'
+      image: 'https://images.unsplash.com/photo-1579267467450-00430973b507?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=200&ixlib=rb-1.2.1&q=80&w=200'
     }
-    axios.post(`${apiUrl}/categories`, param).then((res) => {
+    const headers = {
+      "Content-Type": "multipart/form-data"
+    }
+    const body = new FormData();
+    body.append('image', this.state.selectedCategoryImage);
+    console.log(this.state.selectedCategoryImage);
+    axios.post(`${apiUrl}/upload`, body, { headers }).then((res) => {
       console.log(res);
-      this.setState({ isSaving: false });
-      var options = {
-        place: 'tr',
-        message: 'Category added successfully !!!',
-        type: 'success',
-        autoDismiss: 3,
-        icon: ''
-      };
-      this.refs.notify.notificationAlert(options);
-      this.props.toggleAddCategory();
     }).catch((err) => {
       console.log(err);
     });
+
+    // console.log(param);
+    // const headers = {
+    //   "Content-Type": "application/json"
+    // }
+    // axios.post(`${apiUrl}/categories`, param, { headers }).then((res) => {
+    //   this.setState({ isSaving: false });
+    //   if (res.data.success) {
+    //     this.props.toggleAddCategory();
+    //     this.showSuccess(res.data.message);
+    //   } else {
+    //     this.setState({ formError: res.data.message });
+    //   }
+    // }).catch((err) => {
+    //   this.setState({ isSaving: false });
+    //   this.showError(err.message);
+    //   console.log(err.message);
+    //   this.props.toggleAddCategory();
+    // });
   }
 
   render() {
@@ -74,11 +112,18 @@ class AddCategory extends Component {
                 <Label for="image">Image</Label>
                 {
                   this.state.selectedCategoryImage && (
-                    <img id="target" style={{marginBottom: 10}} alt="selected_cat_image" src={this.state.selectedCategoryImage}/>
+                    <img id="target" style={{marginBottom: 10}} alt="selected_cat_image" src={URL.createObjectURL(this.state.selectedCategoryImage)}/>
                   )
                 }
                 <CustomInput type="file" id="image" name="image" label="Select Category Image" onChange={this.onImageChange} />
               </FormGroup>
+              {
+                this.state.formError && (
+                  <p className="text-danger" >
+                    {this.state.formError}
+                  </p>
+                )
+              }
             </Form>
           </ModalBody>
           <ModalFooter>

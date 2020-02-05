@@ -44,16 +44,16 @@ class Categories extends React.Component {
                   <Table responsive>
                     <thead className="text-primary">
                       <th>
-                        Name
+                        Image
                       </th>
                       <th>
-                        Country
+                        Title
                       </th>
                       <th>
-                        City
+                        Description
                       </th>
                       <th className="text-right">
-                        Salary
+                        Action
                       </th>
                     </thead>
                     <tbody>
