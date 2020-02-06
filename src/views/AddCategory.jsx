@@ -13,7 +13,27 @@ class AddCategory extends Component {
       description: '',
       selectedCategoryImage: null,
       isSaving: false,
-      formError: ''
+      formError: '',
+      categoryId: ''
+    }
+  }
+
+  componentWillReceiveProps = () => {
+    if (this.props.categoryToUpdate) {
+      const { title = "", description = "", image = null, _id = '' } = this.props.categoryToUpdate;
+      this.setState({
+        title,
+        description,
+        selectedCategoryImage: image,
+        categoryId: _id
+      });
+    } else {
+      this.setState({
+        title: '',
+        description: '',
+        selectedCategoryImage: null,
+        categoryId: ''
+      });
     }
   }
 
@@ -56,48 +76,74 @@ class AddCategory extends Component {
 
   saveCategory = () => {
     this.setState({ isSaving: true });
-    
     const body = new FormData();
     body.append('image', this.state.selectedCategoryImage);
-    axios.post(`${apiUrl}/upload`, body).then((res) => {
+    body.append('title', this.state.title);
+    body.append('description', this.state.description);
+    axios.post(`${apiUrl}/categories`, body ).then((res) => {
+      this.setState({ isSaving: false });
       if (res.data.success) {
-        const param = {
-          title: this.state.title,
-          description: this.state.description,
-          image: res.data.data
-        }
-        axios.post(`${apiUrl}/categories`, param ).then((res) => {
-          this.setState({ isSaving: false });
-          if (res.data.success) {
-            this.props.toggleAddCategory();
-            this.showSuccess(res.data.message);
-          } else {
-            this.setState({ formError: res.data.message });
-          }
-        }).catch((err) => {
-          this.setState({ isSaving: false });
-          this.showError(err.message);
-          console.log(err.message);
-          this.props.toggleAddCategory();
-        });
+        this.props.toggleAddCategory(true, res.data.data);
+        this.showSuccess(res.data.message);
+        setTimeout(() => {
+          this.resetForm();
+        }, 1000);
       } else {
-        this.setState({ isSaving: false })
         this.setState({ formError: res.data.message });
       }
     }).catch((err) => {
-      console.log(err);
+      this.setState({ isSaving: false });
+      this.showError(err.message);
+      console.log(err.message);
+      this.props.toggleAddCategory(false, []);
+    });
+  }
+
+  resetForm = () => {
+    this.setState({
+      title: '',
+      description: '',
+      selectedCategoryImage: null
+    });
+  }
+
+  updateCategory = () => {
+    this.setState({ isSaving: true });
+    const body = new FormData();
+    body.append('image', this.state.selectedCategoryImage);
+    body.append('title', this.state.title);
+    body.append('description', this.state.description);
+    console.log(body);
+    console.log(this.state.selectedCategoryImage);
+    axios.put(`${apiUrl}/categories/${this.state.categoryId}`, body).then((res) => {
+      console.log(res);
+      this.setState({ isSaving: false });
+      if (res.data.success) {
+        this.props.toggleAddCategory(true, res.data.data);
+        this.showSuccess(res.data.message);
+        setTimeout(() => {
+          this.resetForm();
+        }, 1000);
+      } else {
+        this.setState({ formError: res.data.message });
+      }
+    }).catch((err) => {
+      this.setState({ isSaving: false });
+      this.showError(err.message);
+      console.log(err.message);
+      this.props.toggleAddCategory(false, []);
     });
   }
 
   render() {
     return (
       <>
-        <Modal isOpen={this.props.isOpen} toggle={this.props.toggleAddCategory}>
+        <Modal isOpen={this.props.isOpen} unmountOnClose={true}>
           <ModalHeader>Modal title</ModalHeader>
           <ModalBody>
             <Form>
               <FormGroup>
-                <Label for="title">Title</Label>
+                <Label for="title">Title<span className="text-danger">*</span></Label>
                 <Input type="text" name="title" value={this.state.title} id="title" placeholder="Category Title" required onChange={this.handleInputChange} />
               </FormGroup>
               <FormGroup>
@@ -107,8 +153,15 @@ class AddCategory extends Component {
               <FormGroup>
                 <Label for="image">Image</Label>
                 {
-                  this.state.selectedCategoryImage && (
+                  this.state.categoryId ? (
+                    <img id="target" style={{marginBottom: 10}} alt="selected_cat_image" src={this.state.selectedCategoryImage}/>
+                  ) : (
                     <img id="target" style={{marginBottom: 10}} alt="selected_cat_image" src={URL.createObjectURL(this.state.selectedCategoryImage)}/>
+                  )
+                }
+                {
+                  this.state.selectedCategoryImage && (
+                    <img id="target" style={{marginBottom: 10}} alt="selected_cat_image" src={this.state.selectedCategoryImage || URL.createObjectURL(this.state.selectedCategoryImage)}/>
                   )
                 }
                 <CustomInput type="file" id="image" name="image" label="Select Category Image" onChange={this.onImageChange} />
@@ -123,11 +176,21 @@ class AddCategory extends Component {
             </Form>
           </ModalBody>
           <ModalFooter>
-            <Button type="submit" color="primary" onClick={this.saveCategory} disabled={this.state.isSaving}>
-              {this.state.isSaving && (<><Spinner color="light" size="sm" />{" "}</>)}
-              SAVE
-            </Button>{' '}
-            <Button color="secondary" onClick={this.props.toggleAddCategory}>Cancel</Button>
+            {
+              this.state.categoryId ? (
+                <Button type="submit" color="primary" onClick={this.updateCategory} disabled={this.state.isSaving || !this.state.title}>
+                  {this.state.isSaving && (<><Spinner color="light" size="sm" />{" "}</>)}
+                  UPDATE
+                </Button>
+              ) : (
+                <Button type="submit" color="primary" onClick={this.saveCategory} disabled={this.state.isSaving || !this.state.title}>
+                  {this.state.isSaving && (<><Spinner color="light" size="sm" />{" "}</>)}
+                  SAVE
+                </Button>
+              )
+            }
+            {" "}
+            <Button color="secondary" onClick={() => this.props.toggleAddCategory(false, [])}>Cancel</Button>
           </ModalFooter>
         </Modal>
 
