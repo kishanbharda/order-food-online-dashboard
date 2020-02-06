@@ -56,41 +56,37 @@ class AddCategory extends Component {
 
   saveCategory = () => {
     this.setState({ isSaving: true });
-    const param = {
-      title: this.state.title,
-      description: this.state.description,
-      image: 'https://images.unsplash.com/photo-1579267467450-00430973b507?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=200&ixlib=rb-1.2.1&q=80&w=200'
-    }
-    const headers = {
-      "Content-Type": "multipart/form-data"
-    }
+    
     const body = new FormData();
     body.append('image', this.state.selectedCategoryImage);
-    console.log(this.state.selectedCategoryImage);
-    axios.post(`${apiUrl}/upload`, body, { headers }).then((res) => {
-      console.log(res);
+    axios.post(`${apiUrl}/upload`, body).then((res) => {
+      if (res.data.success) {
+        const param = {
+          title: this.state.title,
+          description: this.state.description,
+          image: res.data.data
+        }
+        axios.post(`${apiUrl}/categories`, param ).then((res) => {
+          this.setState({ isSaving: false });
+          if (res.data.success) {
+            this.props.toggleAddCategory();
+            this.showSuccess(res.data.message);
+          } else {
+            this.setState({ formError: res.data.message });
+          }
+        }).catch((err) => {
+          this.setState({ isSaving: false });
+          this.showError(err.message);
+          console.log(err.message);
+          this.props.toggleAddCategory();
+        });
+      } else {
+        this.setState({ isSaving: false })
+        this.setState({ formError: res.data.message });
+      }
     }).catch((err) => {
       console.log(err);
     });
-
-    // console.log(param);
-    // const headers = {
-    //   "Content-Type": "application/json"
-    // }
-    // axios.post(`${apiUrl}/categories`, param, { headers }).then((res) => {
-    //   this.setState({ isSaving: false });
-    //   if (res.data.success) {
-    //     this.props.toggleAddCategory();
-    //     this.showSuccess(res.data.message);
-    //   } else {
-    //     this.setState({ formError: res.data.message });
-    //   }
-    // }).catch((err) => {
-    //   this.setState({ isSaving: false });
-    //   this.showError(err.message);
-    //   console.log(err.message);
-    //   this.props.toggleAddCategory();
-    // });
   }
 
   render() {
